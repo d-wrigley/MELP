@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Find A Park - MelParking</title>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.5.0/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.5.0/mapbox-gl.js"></script>
+    <style>
+        img { margin-left: 10px; margin-top: 3px;pointer-events: all;}
+        body { margin: 0; padding: 0; }
+        /**#map { position: absolute; top: 0; bottom: 0; width: 100%; }**/
+        #map { top: 0; bottom: 0; height:915px; width: 100%; } /** WordPress page adaptation **/
+    </style>
+    <script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+    <style>
+        .map-overlay {
+        font: 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
+        position: absolute;
+        width: 120px;
+        top: 55px;
+        left: 0;
+        padding: 10px;
+        }
+        
+        #help_logo { 
+        /* margin-left: 320px;  */
+        margin-left: 260px;
+        display: inline-block; 
+        width: 40px; 
+        height: 40px; 
+        position: absolute; 
+        margin-top: 7px;
+        }
+
+        #site_logo{ 
+        margin-left: 10px; 
+        display: inline-block; 
+        width: 50px; 
+        height: 50px; 
+        position: absolute; 
+        margin-top: 3px;
+        }
+
+        .map-overlay .map-overlay-inner {
+        background-color: rgba(255, 255, 255, 0.5);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        border-radius: 3px;
+        padding: 5px;
+        margin-bottom: 10px;
+        margin-top: 0px;
+        width: 120px;
+        text-align:center;
+        }
+
+        .map-overlay h4 {
+        line-height: 24px;
+        display: block;
+        margin: 0 0 3px;
+        font-size: 13px;
+        }
+
+        .text-bar{
+        display: inline-block;
+        /* margin-left: 50px; */
+        height: 10px;
+        width: 150px;
+        background: linear-gradient(to right, #12ff0a, #fcd62c, #fd2626);
+        }
+
+        .map-overlay .legend .bar {
+        height: 10px;
+        width: 100%;
+        background: linear-gradient(to right, #12ff0a, #fcd62c, #fd2626);
+        }
+
+        .map-overlay input {
+        background-color: transparent;
+        display: inline-block;
+        width: 100%;
+        position: relative;
+        margin: 0;
+        cursor: ew-resize;
+        }
+        .center {text-align: center}
+        .alignleft {text-align: left}
+        .alignright {text-align: right}
+        
+        .mapboxgl-popup {
+        max-width: 400px;
+        font: 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
+        }
+
+        #map {
+        margin-top: 5px;
+        }
+
+        .geocoder {
+        position: absolute;
+        z-index: 1;
+        /* width: 280px; */
+        width: 250px;
+        top: 12px;
+        margin-left: 70px;
+        }
+
+        .mapboxgl-ctrl-geocoder {
+        min-width: 280px;
+        width: 300px;
+        }
+
+        /* popup progress bar*/
+        .modal {
+            display: none; 
+            position: fixed; 
+            z-index: 1; 
+            left: 0;
+            top: 0;
+            width: 100%; 
+            height: 100%;
+            overflow: auto; 
+            background-color: rgb(0,0,0); 
+            background-color: rgba(0,0,0,0.4); 
+        }
+        .help-modal{
+            display: none; 
+            position: fixed; 
+            z-index: 1; 
+            left: 0;
+            top: 0;
+            width: 100%; 
+            height: 100%;
+            overflow: auto; 
+            background-color: rgb(0,0,0); 
+            background-color: rgba(0,0,0,0.4); 
+        }
+
+        #myProgress {
+            width: 100%;
+            background-color: #ddd;
+        }
+
+        #myBar {
+            width: 10%;
+            height: 30px;
+            background-color: #4CAF50;
+            text-align: center;
+            line-height: 30px;
+            color: white;
+        }
+        /* popup content */
+        .modal-content {
+            font-family: Arial, Helvetica, sans-serif;
+            background-color: #fefefe;
+            margin: 20% auto; 
+            padding: 20px;
+            border: 1px solid #888;
+            width: 50%; 
+        }
+
+        /* popup content */
+        .help-content {
+            font-family: Arial, Helvetica, sans-serif;
+            background-color: #fefefe;
+            margin: 20% auto; 
+            margin-top: 100px;
+            align-self: center;
+            padding: 20px;
+            border: 1px solid #888;
+            /* width: 50%;  */
+            width: fit-content;
+            border-radius: 50px;
+            color:rgb(90, 90, 90);
+        }
+        .help-content-text {
+            margin-left: 20px;
+            margin-right: 20px;
+        }
+
+        /* Close */
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            margin:-6% -4%; 
+        }
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        #menu {
+        background: #fff;
+        position: absolute;
+        z-index: 1;
+        top: 10px;
+        right: 10px;
+        border-radius: 3px;
+        width: 120px;
+        border: 1px solid rgba(0, 0, 0, 0.4);
+        font-family: 'Open Sans', sans-serif;
+        }
+        
+        #menu a {
+        font-size: 13px;
+        color: #404040;
+        display: block;
+        margin: 0;
+        padding: 0;
+        padding: 10px;
+        text-decoration: none;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.25);
+        text-align: center;
+        }
+        
+        #menu a:last-child {
+        border: none;
+        }
+        
+        #menu a:hover {
+        background-color: #f8f8f8;
+        color: #404040;
+        }
+        
+        #menu a.active {
+        background-color: #3887be;
+        color: #ffffff;
+        }
+        
+        #menu a.active:hover {
+        background: #3074a4;
+        }
+    </style>
+
+</head>
+<body>
+    <!-- Load the `mapbox-gl-geocoder` plugin. -->
+    <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.7.2/mapbox-gl-geocoder.min.js"></script>
+    <!-- <link rel="stylesheet" href="<?php echo get_template_directory_uri(); ?>/classes/mapbox-gl-geocoder.css" type="text/css"> -->
+    <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.7.2/mapbox-gl-geocoder.css" type="text/css">
+
+    <a href="https://www.melp.tk/">
+        <img src="<?php echo get_template_directory_uri(); ?>/images/logo.png" style="width: 50px;height: 50px;margin: left 10px; margin: top 3px;"/>
+    </a>
+    <div id="geocoder" class="geocoder"></div>
+    <div id="help_logo">
+        <img src="<?php echo get_template_directory_uri(); ?>/images/help.png" 
+        onclick="help_tut()" 
+        style="width: 40px;height: 40px;margin: left 300px;pointer-events: all;"/>
+    </div>
+    
+    <!--<nav id="menu"></nav>-->
+    <div id="map"></div>
+    <!-- Map overlay -->
+    <div class="map-overlay top">
+        <div class="map-overlay-inner">
+            <h4>Day of the week</h4>
+            <select id="daySelect">
+                <option value="1">Monday</option>
+                <option value="2">Tuesday</option>
+                <option value="3">Wednesday</option>
+                <option value="4">Thursday</option>
+                <option value="5">Friday</option>
+                <option value="6">Saturday</option>
+                <option value="7">Sunday</option>
+            </select>
+            <h4>Hour of the Day</h4>
+            <input id="slider" type="range" min="0" max="23" step="1" value="12">
+            <label id="HOUR" value=""></label>
+            <br>
+            <button id = "b_submit" onclick="changeSource()"> Update </button>
+        </div>
+        <div class="map-overlay-inner">
+            <div id="legend" class="legend">
+                <div class="center"> <h4>Parking Availability</h4> </div>
+                <div class="bar"></div>
+                <div style="margin-bottom: 20px;">
+                    <div style="float:left;"> Available </div>
+                    <div style="float:right;"> Occupied </div>
+                </div>
+            </div>
+            <p></p>
+        </div>
+    </div>
+
+    <!-- Instruction Popup -->
+    <div id="help_window" class="help-modal">
+        <!-- Popup content -->
+        <div id="help_window_content" class="help-content">
+            <span class="close">&times;</span>
+            <h1><div class = "center">Help</div></h1>
+            <div class = "help-content-text">
+                <h2>Predictive Parking Availability</h2>
+                <div class="text-bar"></div>
+                <p>Green means the parking space is likely to be available.</p>
+                <p>Red means the parking space is likely to be occupied.</p>
+                <div><h2>Cluster <img src="<?php echo get_template_directory_uri(); ?>/images/cluster.png" style="vertical-align:middle; display: inline-block;width: 100px;"></h2> </div>
+                <p>The number represents the total parking spaces in that area. </p> 
+                <p>The three different colors represent the three different probabilities of parking availability.</p>
+                <p>The donut shows the proportion of parking spaces in a particular area.</p>
+                <h2>Filter</h2>
+                <p>Enter the arrival time by changing the day and the hour and then clicking update.</p>
+                <h2>Directions</h2>
+                <p>Click on a parking spot for directions after zooming in.</p>
+                <br>           
+            </div>
+            <div class = "center"><button id = "close_window" style="background-color: dodgerblue; color: floralwhite;height: 50px;width: 120px;border: none;font-size: 21px; border-radius: 10px;"> Done </button></div>
+        </div>
+    </div>
+
+    <!-- Popup -->
+    <div id="myModal" class="modal">
+        <!-- Popup content -->
+        <div class="modal-content">
+            <div id="pg_bar" class = "center" style="font-size: 28px;margin-bottom: 20px;">Data processing...</div>
+            <span class="close">&times;</span>
+            <div id="myProgress">
+        <div id="myBar">10%</div>
+    </div>
+
+
+    
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+
+    
+
+    <script>
+        //$("label").text(document.getElementById("slider").value +":00");
+        document.getElementById('HOUR').textContent = document.getElementById("slider").value +":00";
+        document.getElementById('slider').addEventListener('input', (e) => {
+                const HOUR = parseInt(e.target.value, 10);
+                // Set the label to the month
+                document.getElementById('HOUR').textContent = HOUR + ':00';
+            }
+        );
+
+
+
+        // Filters for classifying probability into three catagories
+        const po1 = ['<', ['get', 'Percent_Occupied'], 0.33];
+        const po2 = ['all', ['>=', ['get', 'Percent_Occupied'], 0.33], ['<', ['get', 'Percent_Occupied'], 0.66]];
+        const po3 = ['>=', ['get', 'Percent_Occupied'], 0.66];
+        const colors = ["#6aff65","#fce064","#fd5959"];
+        var source_name = "<?php echo get_template_directory_uri(); ?>/MappingData/Mapping_day-1_hour-12.geojson";
+
+        mapboxgl.accessToken = 'pk.eyJ1IjoiZHdyaTAwMDgiLCJhIjoiY2tzcGp0Yno1MDQxajJ0cGR4djdoZDlzdyJ9.YP5TSueqXq7sroO-2ZpLSA';
+        const map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/dark-v10',
+            center: [144.9568, -37.8076],
+            zoom: 11.5, // starting zoom
+            maxZoom: 20,
+            minZoom: 11
+        });
+        
+        function help_tut(){
+            //alert("help_tut working");
+            // Get popup window
+            var modal_help = document.getElementById('help_window');
+            
+            // Obtain <span> for closing popup
+            var span2 = document.querySelector('.close');
+            
+            modal_help.style.display = "block";
+            
+            document.getElementById('close_window').onclick = function(){
+                modal_help.style.display = "none";
+            }
+            // When the user click <span>, close the popup
+            span2.onclick = function() {
+                modal_help.style.display = "none";
+            }
+
+            // When the user click other place, close the popup
+            window.onclick = function(event) {
+                if (event.target == modal_help) {
+                    modal_help.style.display = "none";
+                }
+            }
+        }
+
+        function changeSource(){
+            var dow = document.getElementById("daySelect").value;
+            var h = document.getElementById("slider").value;
+            source_name = '<?php echo get_template_directory_uri(); ?>/MappingData/' + 'Mapping_day-' + dow +'_hour-' + h + '.geojson'
+            // Hide existing layer and remove data source
+            // map.setLayoutProperty('clusters', 'visibility', 'none');
+            // map.setLayoutProperty('unclustered-point', 'visibility', 'none');
+            // map.setLayoutProperty('clusters', 'visibility', 'none');
+            map.getSource('sensors').setData({
+                type: 'FeatureCollection',
+                features: []  // <--- no features
+            });
+
+            // Add a new data source
+            map.getSource('sensors').setData(source_name)
+
+            // Get popup window
+            var modal = document.getElementById('myModal');
+            
+            // Obtain <span> for closing popup
+            var span = document.querySelector('.close');
+
+            
+            modal.style.display = "block";
+
+            function move() { 
+                var elem = document.getElementById("myBar");   
+                var width = 10;
+                let flag = false;
+                document.getElementById('pg_bar').textContent = "Data processing..."
+                var id = setInterval(frame, 30);// 30ms
+                function frame() {
+                    if (width >= 100) {
+                    clearInterval(id);
+                    flag = true;
+                    document.getElementById('pg_bar').textContent = "Please click to continue"
+                    document.getElementById('myModal').onclick = function(){
+                        modal.style.display = "none";
+                    }
+                    //alert(flag)
+                    } else {
+                    width++; 
+                    elem.style.width = width + '%'; 
+                    elem.innerHTML = width * 1  + '%';
+                    }
+                }
+                // if (flag == true){
+                //     //alert(flag);
+                //     alert('working')
+                //     setTimeout(document.getElementById('myModal').style.display = "none", 1000);
+                // }
+            }
+
+            move();
+            
+            //setTimeout(modal.style.display = "none", 3000);
+
+            // When the user click <span>, close the popup
+            span.onclick = function() {
+                modal.style.display = "none";
+            }
+
+            // When the user click other place, close the popup
+            window.onclick = function(event) {
+                if (event.target == modal) {
+                    modal.style.display = "none";
+                }
+            }
+        }
+
+        // initialize the map
+        map.on('load', () => {
+            //Mapping_day-dow_hour-h
+
+            // Add a new source from our GeoJSON data and
+            // set the 'cluster' option to true. GL-JS will
+            // add the point_count property to your source data.
+            map.addSource('sensors', {
+                type: 'geojson',
+                // Point to GeoJSON data. 
+                //data: '<?php echo get_template_directory_uri(); ?>/MappingData.geojson',
+                //data: '<?php echo get_template_directory_uri(); ?>/Mapping_day-${dow}_hour-${h}.geojson',
+                data: source_name,
+                cluster: true,
+                clusterMaxZoom: 14, // Max zoom to cluster points on
+                clusterRadius: 50, // Radius of each cluster when clustering points (defaults to 50)
+                'clusterProperties': {
+                    // keep separate counts for each magnitude category in a cluster
+                    'po1': ['+', ['case', po1, 1, 0]],
+                    'po2': ['+', ['case', po2, 1, 0]],
+                    'po3': ['+', ['case', po3, 1, 0]],
+                }
+            });
+                
+            // map.addLayer({
+            //     id: 'clusters',
+            //     type: 'circle',
+            //     source: 'sensors',
+            //     filter: ['has', 'point_count'],
+            //     //filter:['!', 'cluster', true],
+            //     paint: {
+            //     // Use step expressions (https://docs.mapbox.com/mapbox-gl-js/style-spec/#expressions-step)
+            //     // with three steps to implement three types of circles:
+            //     //   * Red, 15px circles when point count is less than 100
+            //     //   * Yellow, 28px circles when point count is between 100 and 500
+            //     //   * Green, 36px circles when point count is greater than or equal to 500
+            //         // 'circle-color': [
+            //         //     'step',
+            //         //     ['get', 'point_count'],
+            //         //     //'#fd2626', // Red
+            //         //     '#b0c4de',
+            //         //     50,
+            //         //     //'#fcd62c', // Yellow
+            //         //     '#6495ed',
+            //         //     300,
+            //         //     //'#12ff0a'// Green
+            //         //     '#375ac1'
+            //         // ],
+            //         'circle-opacity': 0,
+            //         // 'circle-color': [
+            //         //     'case',
+            //         //     po1,
+            //         //     colors[0],
+            //         //     po2,
+            //         //     colors[1],
+            //         //     colors[2]
+            //         // ],
+            //         'circle-radius': [
+            //             'step',
+            //             ['get', 'point_count'],
+            //             18,
+            //             50,
+            //             26,
+            //             300,
+            //             36
+            //         ]
+            //     }
+            // });
+
+            // map.addLayer({
+            //     id: 'cluster-count',
+            //     type: 'symbol',
+            //     source: 'sensors',
+            //     filter: ['has', 'point_count'],
+            //     //filter:['!', 'cluster', true],
+            //     layout: {
+            //         'text-field': '{point_count_abbreviated}',
+            //         'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
+            //         'text-size': 12
+            //     }
+            // });
+
+            map.addLayer({
+                id: 'unclustered-point',
+                type: 'circle',
+                source: 'sensors',
+                filter: ['!', ['has', 'point_count']],
+                // paint: {
+                //     'circle-color': '#11b4da',
+                //     'circle-radius': 4,
+                //     'circle-stroke-width': 1,
+                //     'circle-stroke-color': '#fff'
+                // }
+                'paint': { // Paint point representation
+                    'circle-opacity': 0.8, // Opacity
+                    "circle-color": {
+                        "property": "Percent_Occupied", // Percent_Occupied column
+                        "stops": [ // Gradient cut-offs
+                            [0, "#12ff0a"], // Green
+                            [0.5, "#fcd62c"], // Orange
+                            [1, "#fd2626"] // Red
+                        ]
+                    },
+                    'circle-radius': {
+                        'base': 3.5,
+                        'stops': [
+                            [12, 3.5],
+                            [22, 220]
+                        ]
+                    }
+                }
+            });
+            
+            // inspect a cluster on click
+            map.on('click', 'clusters', (e) => {
+                const features = map.queryRenderedFeatures(e.point, {
+                    layers: ['clusters']
+                });
+                const clusterId = features[0].properties.cluster_id;
+                map.getSource('sensors').getClusterExpansionZoom(
+                    clusterId,
+                    (err, zoom) => {
+                        if (err) return;
+                        
+                        map.easeTo({
+                        center: features[0].geometry.coordinates,
+                        zoom: zoom
+                        });
+                    }
+                );
+            });
+
+            // When a click event occurs on a feature in
+            // the unclustered-point layer, open a popup at
+            // the location of the feature, with
+            // description HTML from its properties.
+            map.on('click', 'unclustered-point', (e) => {
+                const coordinates = e.features[0].geometry.coordinates.slice();
+                const po = e.features[0].properties.Percent_Occupied;
+
+                // Ensure that if the map is zoomed out such that
+                // multiple copies of the feature are visible, the
+                // popup appears over the copy being pointed to.
+                while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+                    coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+                }
+                
+                let a=document.createElement('a');
+                a.target='_blank';
+                a.href = "http://www.google.com/maps/place/"+coordinates[1]+","+coordinates[0];
+
+                // alert
+                if (window.confirm('Do you want to navigate here in Google Maps?'))
+                {
+                a.click();
+                };    
+                // new mapboxgl.Popup()
+                //     .setLngLat(coordinates)
+                //     .setHTML(
+                //         `Percent Occupied: ${po}`
+                //     )
+                //     .addTo(map);
+            });
+
+            // Cursor for unclustered point
+            map.on('mouseenter','unclustered-point', ()=>{
+                map.getCanvas().style.cursor = 'pointer';
+            });
+            map.on('mouseleave','unclustered-point', ()=>{
+                map.getCanvas().style.cursor = '';
+            });
+
+            // map.on('mouseenter', 'clusters', () => {
+            //     map.getCanvas().style.cursor = 'pointer';
+            // });
+            // map.on('mouseleave', 'clusters', () => {
+            //     map.getCanvas().style.cursor = '';
+            // });
+
+            // objects for caching and keeping track of HTML marker objects (for performance)
+            const markers = {};
+            let markersOnScreen = {};
+
+            function updateMarkers() {
+                const newMarkers = {};
+                const features = map.querySourceFeatures('sensors');
+                
+                // for every cluster on the screen, create an HTML marker for it (if we didn't yet),
+                // and add it to the map if it's not there already
+                for (const feature of features) {
+                    const coords = feature.geometry.coordinates;
+                    const props = feature.properties;
+                    if (!props.cluster) continue;
+                    const id = props.cluster_id;
+                
+                    let marker = markers[id];
+                    if (!marker) {
+                        const el = createDonutChart(props);
+                        marker = markers[id] = new mapboxgl.Marker({
+                        element: el
+                        }).setLngLat(coords);
+                    }
+                    newMarkers[id] = marker;
+                
+                    if (!markersOnScreen[id]) marker.addTo(map);
+                }
+                // for every marker we've added previously, remove those that are no longer visible
+                for (const id in markersOnScreen) {
+                    if (!newMarkers[id]) markersOnScreen[id].remove();
+                }
+                markersOnScreen = newMarkers;
+            }
+
+            // after the GeoJSON data is loaded, update markers on the screen on every frame
+            map.on('render', () => {
+            if (!map.isSourceLoaded('sensors')) return;
+            updateMarkers();
+            });
+
+        });
+
+        // After the last frame rendered before the map enters an "idle" state.
+        map.on('idle', () => {
+                // If these two layers were not added to the map, abort
+                if (!map.getLayer('clusters') || !map.getLayer('unclustered-point')) {
+                    return;
+                }
+                
+                // Enumerate ids of the layers.
+                const toggleableLayerIds = ['clusters', 'unclustered-point'];
+                
+                // Set up the corresponding toggle button for each layer.
+                for (const id of toggleableLayerIds) {
+                    // Skip layers that already have a button set up.
+                    if (document.getElementById(id)) {
+                        continue;
+                }
+                
+                // Create a link.
+                const link = document.createElement('a');
+                link.id = id;
+                link.href = '#';
+                link.textContent = id;
+                link.className = 'active';
+                
+                // Show or hide layer when the toggle is clicked.
+                link.onclick = function (e) {
+                    const clickedLayer = this.textContent;
+                    e.preventDefault();
+                    e.stopPropagation();
+                
+                    const visibility = map.getLayoutProperty(
+                        clickedLayer,
+                        'visibility'
+                    );
+                
+                    // Toggle layer visibility by changing the layout object's visibility property.
+                    if (visibility === 'visible') {
+                        map.setLayoutProperty(clickedLayer, 'visibility', 'none');
+                        //map.setLayoutProperty('clusters', 'visibility', 'none');
+                        this.className = '';
+                    } else {
+                        this.className = 'active';
+                        map.setLayoutProperty(
+                            clickedLayer,
+                            'visibility',
+                            'visible'
+                        );
+                    }
+                };
+                
+                const layers = document.getElementById('menu');
+                layers.appendChild(link);
+            }
+        });
+
+        // Add the searchbox to the map.
+        const geocoder = new MapboxGeocoder({
+            accessToken: mapboxgl.accessToken,
+            mapboxgl: mapboxgl
+        });
+        document.getElementById('geocoder').appendChild(geocoder.onAdd(map));
+
+        // map.addControl(
+        //     new MapboxGeocoder({
+        //         accessToken: mapboxgl.accessToken,
+        //         mapboxgl: mapboxgl
+        //     })
+        // );
+
+        // code for creating an SVG donut chart from feature properties
+        function createDonutChart(props) {
+            const offsets = [];
+            const counts = [
+                props.po1,
+                props.po2,
+                props.po3,
+            ];
+            let total = 0;
+            for (const count of counts) {
+                offsets.push(total);
+                total += count;
+            }
+            const fontSize = 14
+                //total >= 1000 ? 18 : total >= 200 ? 16 : total >= 20 ? 18 : 14;
+            const r =
+                total >= 3000 ? 50 : total >= 800 ? 32 : total >= 100 ? 24 : 18;
+            const r0 = Math.round(r * 0.6);
+            const w = r * 2;
+            
+            let html = `<div>
+            <svg width="${w}" height="${w}" viewbox="0 0 ${w} ${w}" text-anchor="middle" style="font: ${fontSize}px Arial Unicode MS Bold; display: block">`;
+            
+            for (let i = 0; i < counts.length; i++) {
+                html += donutSegment(
+                    offsets[i] / total,
+                    (offsets[i] + counts[i]) / total,
+                    r,
+                    r0,
+                    colors[i]
+                );
+            }
+            html += `<circle cx="${r}" cy="${r}" r="${r0}" fill="white" />
+            <text dominant-baseline="central" transform="translate(${r}, ${r})">
+            ${total.toLocaleString()}
+            </text>
+            </svg>
+            </div>`;
+            
+            const el = document.createElement('div');
+            el.innerHTML = html;
+            return el.firstChild;
+        }
+
+        function donutSegment(start, end, r, r0, color) {
+            if (end - start === 1) end -= 0.00001;
+            const a0 = 2 * Math.PI * (start - 0.25);
+            const a1 = 2 * Math.PI * (end - 0.25);
+            const x0 = Math.cos(a0),
+                y0 = Math.sin(a0);
+            const x1 = Math.cos(a1),
+                y1 = Math.sin(a1);
+            const largeArc = end - start > 0.5 ? 1 : 0;
+            
+            // draw an SVG path
+            return `<path d="M ${r + r0 * x0} ${r + r0 * y0} L ${r + r * x0} ${
+            r + r * y0
+            } A ${r} ${r} 0 ${largeArc} 1 ${r + r * x1} ${r + r * y1} L ${
+            r + r0 * x1
+            } ${r + r0 * y1} A ${r0} ${r0} 0 ${largeArc} 0 ${r + r0 * x0} ${
+            r + r0 * y0
+            }" fill="${color}" />`;
+        }
+    </script>
+
+</body>
+</html>
